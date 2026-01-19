@@ -6,7 +6,7 @@ import type { MicrosoftRewardsBot } from '../index'
 import { QueryEngine } from '../interface/Config'
 
 export class QueryCore {
-    constructor(private bot: MicrosoftRewardsBot) {}
+    constructor(private bot: MicrosoftRewardsBot) { }
 
     async queryManager(
         options: {
@@ -15,6 +15,7 @@ export class QueryCore {
             related?: boolean
             langCode?: string
             geoLocale?: string
+            accountEmail?: string
         } = {}
     ): Promise<string[]> {
         const {
@@ -22,7 +23,8 @@ export class QueryCore {
             sourceOrder = ['google', 'wikipedia', 'reddit', 'local'],
             related = true,
             langCode = 'en',
-            geoLocale = 'US'
+            geoLocale = 'US',
+            accountEmail = 'default'
         } = options
 
         try {
@@ -34,38 +36,44 @@ export class QueryCore {
 
             const topicLists: string[][] = []
 
-            const sourceHandlers: Record<
-                'google' | 'wikipedia' | 'reddit' | 'local',
-                (() => Promise<string[]>) | (() => string[])
-            > = {
-                google: async () => {
-                    const topics = await this.getGoogleTrends(geoLocale.toUpperCase()).catch(() => [])
-                    this.bot.logger.debug(this.bot.isMobile, 'QUERY-MANAGER', `google: ${topics.length}`)
-                    return topics
-                },
-                wikipedia: async () => {
-                    const topics = await this.getWikipediaTrending(langCode).catch(() => [])
-                    this.bot.logger.debug(this.bot.isMobile, 'QUERY-MANAGER', `wikipedia: ${topics.length}`)
-                    return topics
-                },
-                reddit: async () => {
-                    const topics = await this.getRedditTopics().catch(() => [])
-                    this.bot.logger.debug(this.bot.isMobile, 'QUERY-MANAGER', `reddit: ${topics.length}`)
-                    return topics
-                },
-                local: () => {
-                    const topics = this.getLocalQueryList()
-                    this.bot.logger.debug(this.bot.isMobile, 'QUERY-MANAGER', `local: ${topics.length}`)
-                    return topics
-                }
-            }
-
-            for (const source of sourceOrder) {
-                const handler = sourceHandlers[source]
-                if (!handler) continue
-
-                const topics = await Promise.resolve(handler())
+            if (this.bot.config.customWordlist) {
+                this.bot.logger.info(this.bot.isMobile, 'QUERY-MANAGER', 'Custom Wordlist enabled, using wordlist.txt')
+                const topics = this.getCustomQueries(accountEmail)
                 if (topics.length) topicLists.push(topics)
+            } else {
+                const sourceHandlers: Record<
+                    QueryEngine,
+                    (() => Promise<string[]>) | (() => string[])
+                > = {
+                    google: async () => {
+                        const topics = await this.getGoogleTrends(geoLocale.toUpperCase()).catch(() => [])
+                        this.bot.logger.debug(this.bot.isMobile, 'QUERY-MANAGER', `google: ${topics.length}`)
+                        return topics
+                    },
+                    wikipedia: async () => {
+                        const topics = await this.getWikipediaTrending(langCode).catch(() => [])
+                        this.bot.logger.debug(this.bot.isMobile, 'QUERY-MANAGER', `wikipedia: ${topics.length}`)
+                        return topics
+                    },
+                    reddit: async () => {
+                        const topics = await this.getRedditTopics().catch(() => [])
+                        this.bot.logger.debug(this.bot.isMobile, 'QUERY-MANAGER', `reddit: ${topics.length}`)
+                        return topics
+                    },
+                    local: () => {
+                        const topics = this.getLocalQueryList()
+                        this.bot.logger.debug(this.bot.isMobile, 'QUERY-MANAGER', `local: ${topics.length}`)
+                        return topics
+                    }
+                }
+
+                for (const source of sourceOrder) {
+                    const handler = sourceHandlers[source]
+                    if (!handler) continue
+
+                    const topics = await Promise.resolve(handler())
+                    if (topics.length) topicLists.push(topics)
+                }
             }
 
             this.bot.logger.debug(
@@ -89,7 +97,9 @@ export class QueryCore {
             )
             this.bot.logger.debug(this.bot.isMobile, 'QUERY-MANAGER', `baseTopics: ${baseTopics.length}`)
 
-            const clusters = related ? await this.buildRelatedClusters(baseTopics, langCode) : baseTopics.map(t => [t])
+            // Disable related search expansion if customWordlist is enabled to ensure exact keyword usage and avoid API warnings
+            const shouldFetchRelated = related && !this.bot.config.customWordlist
+            const clusters = shouldFetchRelated ? await this.buildRelatedClusters(baseTopics, langCode) : baseTopics.map(t => [t])
 
             this.bot.utils.shuffleArray(clusters)
             this.bot.logger.debug(this.bot.isMobile, 'QUERY-MANAGER', 'clusters shuffled')
@@ -238,8 +248,7 @@ export class QueryCore {
             this.bot.logger.debug(
                 this.bot.isMobile,
                 'SEARCH-GOOGLE-TRENDS',
-                `request failed: ${
-                    error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
+                `request failed: ${error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
                 }`
             )
             return []
@@ -254,7 +263,7 @@ export class QueryCore {
             if (!trimmed.startsWith('[')) continue
             try {
                 return JSON.parse(JSON.parse(trimmed)[0][2])[1]
-            } catch {}
+            } catch { }
         }
         return null
     }
@@ -291,8 +300,7 @@ export class QueryCore {
             this.bot.logger.debug(
                 this.bot.isMobile,
                 'SEARCH-BING-SUGGESTIONS',
-                `request failed | query="${query}" | lang=${langCode} | error=${
-                    error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
+                `request failed | query="${query}" | lang=${langCode} | error=${error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
                 }`
             )
             return []
@@ -328,8 +336,7 @@ export class QueryCore {
             this.bot.logger.debug(
                 this.bot.isMobile,
                 'SEARCH-BING-RELATED',
-                `request failed | query="${query}" | error=${
-                    error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
+                `request failed | query="${query}" | error=${error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
                 }`
             )
             return []
@@ -373,8 +380,7 @@ export class QueryCore {
             this.bot.logger.debug(
                 this.bot.isMobile,
                 'SEARCH-BING-TRENDING',
-                `request failed | lang=${langCode} | error=${
-                    error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
+                `request failed | lang=${langCode} | error=${error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
                 }`
             )
             return []
@@ -416,8 +422,7 @@ export class QueryCore {
             this.bot.logger.debug(
                 this.bot.isMobile,
                 'SEARCH-WIKIPEDIA-TRENDING',
-                `request failed | lang=${langCode} | error=${
-                    error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
+                `request failed | lang=${langCode} | error=${error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
                 }`
             )
             return []
@@ -455,8 +460,7 @@ export class QueryCore {
             this.bot.logger.debug(
                 this.bot.isMobile,
                 'SEARCH-REDDIT',
-                `request failed | subreddit=${subreddit} | error=${
-                    error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
+                `request failed | subreddit=${subreddit} | error=${error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
                 }`
             )
             return []
@@ -490,9 +494,74 @@ export class QueryCore {
             this.bot.logger.debug(
                 this.bot.isMobile,
                 'SEARCH-LOCAL-QUERY-LIST',
-                `read/parse failed | error=${
-                    error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
+                `read/parse failed | error=${error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
                 }`
+            )
+            return []
+        }
+    }
+
+    getCustomQueries(accountEmail: string): string[] {
+        this.bot.logger.info(this.bot.isMobile, 'SEARCH-CUSTOM-WORDLIST', `getCustomQueries called for ${accountEmail}`)
+        try {
+            const wordlistPath = path.join(process.cwd(), 'wordlist.txt')
+            if (!fs.existsSync(wordlistPath)) {
+                this.bot.logger.warn(this.bot.isMobile, 'SEARCH-CUSTOM-WORDLIST', 'wordlist.txt not found')
+                return []
+            }
+
+            const content = fs.readFileSync(wordlistPath, 'utf8')
+            const allWords = content.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0)
+
+            if (allWords.length === 0) {
+                this.bot.logger.warn(this.bot.isMobile, 'SEARCH-CUSTOM-WORDLIST', 'wordlist.txt is empty')
+                return []
+            }
+
+            const trackingPath = path.join(__dirname, '../wordlist_tracking.json')
+            let trackingData: Record<string, string[]> = {}
+
+            if (fs.existsSync(trackingPath)) {
+                try {
+                    trackingData = JSON.parse(fs.readFileSync(trackingPath, 'utf8'))
+                } catch (e) {
+                    this.bot.logger.warn(this.bot.isMobile, 'SEARCH-CUSTOM-WORDLIST', 'Failed to parse tracking file, resetting')
+                }
+            }
+
+            const usedWords = new Set(trackingData[accountEmail] || [])
+            const availableWords = allWords.filter(word => !usedWords.has(word))
+
+            this.bot.logger.debug(
+                this.bot.isMobile,
+                'SEARCH-CUSTOM-WORDLIST',
+                `Account: ${accountEmail} | Total: ${allWords.length} | Used: ${usedWords.size} | Available: ${availableWords.length}`
+            )
+
+            if (availableWords.length === 0) {
+                this.bot.logger.warn(this.bot.isMobile, 'SEARCH-CUSTOM-WORDLIST', 'All words in wordlist.txt have been used for this account')
+                return []
+            }
+
+            // Select up to 50 words to return (to avoid overwhelming passing huge lists)
+            // But we need to track them as "used" immediately or track them AFTER search?
+            // Ideally we track what we RETURN here as "intent to use".
+            // If the session crashes, words are lost from "available" but that's safer than duplicates.
+
+            const limit = 50
+            const selectedWords = availableWords.slice(0, limit)
+
+            // Update tracking
+            trackingData[accountEmail] = [...usedWords, ...selectedWords]
+            fs.writeFileSync(trackingPath, JSON.stringify(trackingData, null, 2))
+
+            return selectedWords
+
+        } catch (error) {
+            this.bot.logger.error(
+                this.bot.isMobile,
+                'SEARCH-CUSTOM-WORDLIST',
+                `Error: ${error instanceof Error ? error.message : String(error)}`
             )
             return []
         }

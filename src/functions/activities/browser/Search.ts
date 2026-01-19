@@ -9,7 +9,7 @@ export class Search extends Workers {
     private searchPageURL = ''
     private searchCount = 0
 
-    public async doSearch(data: DashboardData, page: Page, isMobile: boolean): Promise<number> {
+    public async doSearch(data: DashboardData, page: Page, isMobile: boolean, accountEmail: string): Promise<number> {
         const startBalance = Number(this.bot.userData.currentPoints ?? 0)
 
         this.bot.logger.info(isMobile, 'SEARCH-BING', `Starting Bing searches | currentPoints=${startBalance}`)
@@ -48,7 +48,8 @@ export class Search extends Workers {
                 related: true,
                 langCode,
                 geoLocale: locale,
-                sourceOrder: ['google', 'wikipedia', 'reddit', 'local']
+                sourceOrder: ['google', 'wikipedia', 'reddit', 'local'],
+                accountEmail
             })
 
             queries = [...new Set(queries.map(q => q.trim()).filter(Boolean))]
@@ -60,7 +61,7 @@ export class Search extends Workers {
             this.bot.logger.debug(isMobile, 'SEARCH-BING', `Navigating to search page | url=${targetUrl}`)
 
             await page.goto(targetUrl)
-            await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {})
+            await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => { })
             await this.bot.browser.utils.tryDismissAllMessages(page)
 
             let stagnantLoop = 0
@@ -135,7 +136,8 @@ export class Search extends Workers {
                         related: true,
                         langCode,
                         geoLocale: locale,
-                        sourceOrder: this.bot.config.searchSettings.queryEngines
+                        sourceOrder: this.bot.config.searchSettings.queryEngines,
+                        accountEmail
                     })
 
                     const merged = [...queries, ...extra].map(q => q.trim()).filter(Boolean)
@@ -162,7 +164,8 @@ export class Search extends Workers {
                         related: true,
                         langCode,
                         geoLocale: locale,
-                        sourceOrder: this.bot.config.searchSettings.queryEngines
+                        sourceOrder: this.bot.config.searchSettings.queryEngines,
+                        accountEmail
                     })
 
                     const merged = [...queries, ...extra].map(q => q.trim()).filter(Boolean)
@@ -277,7 +280,7 @@ export class Search extends Workers {
             this.bot.logger.debug(isMobile, 'SEARCH-BING', `Returning home to refresh state | url=${this.bingHome}`)
 
             await searchPage.goto(this.bingHome)
-            await searchPage.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {})
+            await searchPage.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => { })
             await this.bot.browser.utils.tryDismissAllMessages(searchPage)
         }
 
@@ -405,7 +408,11 @@ export class Search extends Workers {
 
             const searchPageUrl = page.url()
 
-            await this.bot.browser.utils.ghostClick(page, '#b_results .b_algo h2')
+            const desktopSelector = '#b_results .b_algo h2:visible'
+            const mobileSelector = '#b_results .b_algo:visible, #b_results .b_ans:visible, #b_results .b_top:visible, .b_algo:visible' // Broader coverage for mobile
+
+            const selector = isMobile ? mobileSelector : desktopSelector
+            await this.bot.browser.utils.ghostClick(page, selector)
             await this.bot.utils.wait(this.bot.config.searchSettings.searchResultVisitTime)
 
             if (isMobile) {

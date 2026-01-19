@@ -79,7 +79,8 @@ export const ConfigSchema = z.object({
         queryEngine: z.boolean()
     }),
     consoleLogFilter: LogFilterSchema,
-    webhook: WebhookSchema
+    webhook: WebhookSchema,
+    customWordlist: z.boolean().default(false)
 })
 
 // Account

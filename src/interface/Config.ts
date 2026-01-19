@@ -13,6 +13,7 @@ export interface Config {
     proxy: ConfigProxy
     consoleLogFilter: LogFilter
     webhook: ConfigWebhook
+    customWordlist: boolean
 }
 
 export type QueryEngine = 'google' | 'wikipedia' | 'reddit' | 'local'

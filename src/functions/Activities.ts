@@ -32,9 +32,9 @@ export default class Activities {
     }
 
     // Browser Activities
-    doSearch = async (data: DashboardData, page: Page, isMobile: boolean): Promise<number> => {
+    doSearch = async (data: DashboardData, page: Page, isMobile: boolean, accountEmail: string): Promise<number> => {
         const search = new Search(this.bot)
-        return await search.doSearch(data, page, isMobile)
+        return await search.doSearch(data, page, isMobile, accountEmail)
     }
 
     doSearchOnBing = async (promotion: BasePromotion, page: Page): Promise<void> => {

@@ -410,8 +410,7 @@ export class MicrosoftRewardsBot {
                 this.logger.info(
                     'main',
                     'POINTS',
-                    `Earnable today | Mobile: ${this.pointsCanCollect} | Browser: ${
-                        browserEarnable.mobileSearchPoints
+                    `Earnable today | Mobile: ${this.pointsCanCollect} | Browser: ${browserEarnable.mobileSearchPoints
                     } | App: ${appEarnable?.totalEarnablePoints ?? 0} | ${accountEmail} | locale: ${this.userData.geoLocale}`
                 )
 
@@ -459,7 +458,7 @@ export class MicrosoftRewardsBot {
                     await executionContext.run({ isMobile: true, account }, async () => {
                         await this.browser.func.closeBrowser(mobileSession!.context, accountEmail)
                     })
-                } catch {}
+                } catch { }
             }
         }
     }

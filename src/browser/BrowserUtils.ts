@@ -120,7 +120,7 @@ export default class BrowserUtils {
                 try {
                     await page.reload({ waitUntil: 'load' })
                 } catch {
-                    await page.reload().catch(() => {})
+                    await page.reload().catch(() => { })
                 }
                 return true
             } else {
@@ -220,17 +220,44 @@ export default class BrowserUtils {
             )
 
             // Wait for selector to exist before clicking
-            await page.waitForSelector(selector, { timeout: 10000 })
+            await page.waitForSelector(selector, { state: 'visible', timeout: 10000 })
 
             const cursor = createCursor(page as any)
             await cursor.click(selector, options)
 
             return true
         } catch (error) {
+            // Enhanced debugging for GHOST-CLICK failures
+            try {
+                const elements = await page.$$(selector)
+                this.bot.logger.error(
+                    this.bot.isMobile,
+                    'GHOST-CLICK',
+                    `Failed for ${selector} | Matches found: ${elements.length}`
+                )
+
+                if (elements.length > 0) {
+                    const firstVisible = await Promise.all(
+                        elements.slice(0, 5).map(async (el, i) => {
+                            const isVisible = await el.isVisible().catch(() => false)
+                            const html = await el.evaluate(node => node.outerHTML.substring(0, 100)).catch(() => 'error')
+                            return `[${i}] visible=${isVisible} | html=${html}...`
+                        })
+                    )
+                    this.bot.logger.error(
+                        this.bot.isMobile,
+                        'GHOST-CLICK',
+                        `Element states:\n${firstVisible.join('\n')}`
+                    )
+                }
+            } catch (debugError) {
+                this.bot.logger.error(this.bot.isMobile, 'GHOST-CLICK', `Failed to collect debug info: ${debugError}`)
+            }
+
             this.bot.logger.error(
                 this.bot.isMobile,
                 'GHOST-CLICK',
-                `Failed for ${selector}: ${error instanceof Error ? error.message : String(error)}`
+                `Original Error: ${error instanceof Error ? error.message : String(error)}`
             )
             return false
         }

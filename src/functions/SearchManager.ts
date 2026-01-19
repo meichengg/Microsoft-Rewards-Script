@@ -20,7 +20,7 @@ interface SearchResults {
 }
 
 export class SearchManager {
-    constructor(private bot: MicrosoftRewardsBot) {}
+    constructor(private bot: MicrosoftRewardsBot) { }
 
     async doSearches(
         data: DashboardData,
@@ -226,8 +226,7 @@ export class SearchManager {
             this.bot.logger.info(
                 'main',
                 'SEARCH-MANAGER',
-                `Parallel summary | mobile=${mobilePoints} | desktop=${desktopPoints} | total=${
-                    mobilePoints + desktopPoints
+                `Parallel summary | mobile=${mobilePoints} | desktop=${desktopPoints} | total=${mobilePoints + desktopPoints
                 }`
             )
 
@@ -351,8 +350,7 @@ export class SearchManager {
         this.bot.logger.info(
             'main',
             'SEARCH-MANAGER',
-            `Sequential summary | mobile=${mobilePoints} | desktop=${desktopPoints} | total=${
-                mobilePoints + desktopPoints
+            `Sequential summary | mobile=${mobilePoints} | desktop=${desktopPoints} | total=${mobilePoints + desktopPoints
             }`
         )
         this.bot.logger.debug('main', 'SEARCH-MANAGER', `Sequential done | account=${accountEmail}`)
@@ -423,7 +421,7 @@ export class SearchManager {
                 )
                 this.bot.logger.debug('main', 'SEARCH-MOBILE-SEARCH', 'activities.doSearch (mobile)')
 
-                const pointsEarned = await this.bot.activities.doSearch(data, this.bot.mainMobilePage, true)
+                const pointsEarned = await this.bot.activities.doSearch(data, this.bot.mainMobilePage, true, accountEmail)
 
                 this.bot.logger.info(
                     'main',
@@ -487,7 +485,7 @@ export class SearchManager {
                     'SEARCH-DESKTOP-PARALLEL',
                     `Search start | target=${missingSearchPoints.desktopPoints}`
                 )
-                const pointsEarned = await this.bot.activities.doSearch(data, this.bot.mainDesktopPage, false)
+                const pointsEarned = await this.bot.activities.doSearch(data, this.bot.mainDesktopPage, false, accountEmail)
 
                 this.bot.logger.info(
                     'main',
@@ -566,7 +564,7 @@ export class SearchManager {
                     `Search start | target=${missingSearchPoints.desktopPoints}`
                 )
 
-                const pointsEarned = await this.bot.activities.doSearch(data, this.bot.mainDesktopPage, false)
+                const pointsEarned = await this.bot.activities.doSearch(data, this.bot.mainDesktopPage, false, accountEmail)
 
                 this.bot.logger.info(
                     'main',
