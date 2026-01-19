@@ -196,11 +196,11 @@ export class Workers {
                             this.bot.logger.info(
                                 this.bot.isMobile,
                                 'ACTIVITY',
-                                `Found activity type "Poll" | title="${activity.title}" | offerId=${offerId}`
+                                `Found activity type "Poll" | title="${activity.title}" | offerId=${offerId} | Attempting via generic Quiz handler`
                             )
 
-                            //await this.bot.activities.doPoll(basePromotion)
-                            break
+                            // Fallthrough to generic Quiz handler
+                            // break
                         }
 
                         // All other quizzes handled via Quiz API

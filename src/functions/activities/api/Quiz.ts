@@ -50,8 +50,8 @@ export class Quiz extends Workers {
                 return
             }
 
-            //Standard points quizzes (20/30/40/50 max)
-            if ([20, 30, 40, 50].includes(promotion.pointProgressMax)) {
+            //Standard points quizzes (10/20/30/40/50 max)
+            if ([10, 20, 30, 40, 50].includes(promotion.pointProgressMax)) {
                 let oldBalance = startBalance
                 let gainedPoints = 0
                 const maxAttempts = 20
