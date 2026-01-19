@@ -9,11 +9,14 @@ services:
             - ./src/accounts.json:/usr/src/microsoft-rewards-script/dist/accounts.json:ro
             - ./src/config.json:/usr/src/microsoft-rewards-script/dist/config.json:ro
             - ./sessions:/usr/src/microsoft-rewards-script/dist/browser/sessions
+            # Custom Wordlist
+            - ./wordlist.txt:/usr/src/microsoft-rewards-script/wordlist.txt:ro
+            - ./src/wordlist_tracking.json:/usr/src/microsoft-rewards-script/dist/wordlist_tracking.json:rw
 
         environment:
-            TZ: 'America/Toronto' # Set your timezone for proper scheduling
+            TZ: 'Asia/Ho_Chi_Minh' # Set your timezone for proper scheduling
             NODE_ENV: 'production'
-            CRON_SCHEDULE: '0 7 * * *' # Customize your schedule, use crontab.guru for formatting
+            CRON_SCHEDULE: '0 7,16,20 * * *' # Customize your schedule, use crontab.guru for formatting
             RUN_ON_START: 'true' # Runs the script immediately on container startup
 
             # Add a small random delay to the scheduled start time (uncomment to customize delay, or disable)

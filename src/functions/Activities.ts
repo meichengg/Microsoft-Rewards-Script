@@ -99,4 +99,21 @@ export default class Activities {
         const dailyCheckIn = new DailyCheckIn(this.bot)
         await dailyCheckIn.doDailyCheckIn()
     }
+
+    getPointCounters(data: DashboardData): { mobile: { current: number, max: number }, desktop: { current: number, max: number } } {
+        const mobile = { current: 0, max: 0 }
+        const desktop = { current: 0, max: 0 }
+
+        if (data.userStatus?.counters?.mobileSearch?.[0]) {
+            mobile.current = data.userStatus.counters.mobileSearch[0].pointProgress ?? 0
+            mobile.max = data.userStatus.counters.mobileSearch[0].pointProgressMax ?? 0
+        }
+
+        if (data.userStatus?.counters?.pcSearch?.[0]) {
+            desktop.current = data.userStatus.counters.pcSearch[0].pointProgress ?? 0
+            desktop.max = data.userStatus.counters.pcSearch[0].pointProgressMax ?? 0
+        }
+
+        return { mobile, desktop }
+    }
 }

@@ -35,6 +35,40 @@ export class SearchManager {
             `Start | account=${accountEmail} | mobileMissing=${missingSearchPoints.mobilePoints} | desktopMissing=${missingSearchPoints.desktopPoints}`
         )
 
+        // API Point Verification
+        try {
+            const apiPoints = this.bot.activities.getPointCounters(data)
+            const apiMobileRemaining = Math.max(0, apiPoints.mobile.max - apiPoints.mobile.current)
+            const apiDesktopRemaining = Math.max(0, apiPoints.desktop.max - apiPoints.desktop.current)
+
+            this.bot.logger.info(
+                'main',
+                'SEARCH-MANAGER',
+                `API Check | Mobile: ${apiPoints.mobile.current}/${apiPoints.mobile.max} (${apiMobileRemaining} left) | Desktop: ${apiPoints.desktop.current}/${apiPoints.desktop.max} (${apiDesktopRemaining} left)`
+            )
+
+            if (missingSearchPoints.mobilePoints !== apiMobileRemaining) {
+                this.bot.logger.info(
+                    'main',
+                    'SEARCH-MANAGER',
+                    `Correction | Mobile: ${missingSearchPoints.mobilePoints} -> ${apiMobileRemaining} (API Authoritative)`
+                )
+                missingSearchPoints.mobilePoints = apiMobileRemaining
+            }
+
+            if (missingSearchPoints.desktopPoints !== apiDesktopRemaining) {
+                this.bot.logger.info(
+                    'main',
+                    'SEARCH-MANAGER',
+                    `Correction | Desktop: ${missingSearchPoints.desktopPoints} -> ${apiDesktopRemaining} (API Authoritative)`
+                )
+                missingSearchPoints.desktopPoints = apiDesktopRemaining
+            }
+
+        } catch (error) {
+            this.bot.logger.error('main', 'SEARCH-MANAGER', `Failed to verify points via API: ${error}`)
+        }
+
         const doMobile = this.bot.config.workers.doMobileSearch && missingSearchPoints.mobilePoints > 0
         const doDesktop = this.bot.config.workers.doDesktopSearch && missingSearchPoints.desktopPoints > 0
 

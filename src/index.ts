@@ -188,12 +188,11 @@ export class MicrosoftRewardsBot {
 
         const onWorkerDone = async (label: 'exit' | 'disconnect', worker: Worker, code?: number): Promise<void> => {
             const { pid } = worker.process
-            this.activeWorkers -= 1
-
             if (!pid || this.exitedWorkers.includes(pid)) {
                 return
             } else {
                 this.exitedWorkers.push(pid)
+                this.activeWorkers -= 1
             }
 
             this.logger.warn(
