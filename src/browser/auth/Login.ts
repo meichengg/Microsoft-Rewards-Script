@@ -57,8 +57,7 @@ export class Login {
         totpInputOld: 'form[name="OneTimeCodeViewForm"]',
         identityBanner: '[data-testid="identityBanner"]',
         viewFooter: '[data-testid="viewFooter"] >> [role="button"]',
-        otherWaysToSignIn:
-            'span[role="button"]:has-text("Other ways to sign in"), span[role="button"]:has-text("other ways")',
+        otherWaysToSignIn: '[data-testid="viewFooter"] span[role="button"]',
         otpCodeEntry: '[data-testid="codeEntry"]',
         backButton: '#back-button',
         bingProfile: '#id_n',
@@ -191,7 +190,7 @@ export class Login {
             [this.selectors.totpInput, '2FA_TOTP'],
             [this.selectors.totpInputOld, '2FA_TOTP'],
             [this.selectors.otpCodeEntry, 'OTP_CODE_ENTRY'], // PR 450
-            [this.selectors.otpInput, 'OTP_CODE_ENTRY']      // My Fix
+            [this.selectors.otpInput, 'OTP_CODE_ENTRY'] // My Fix
         ]
 
         const results = await Promise.all(
@@ -503,7 +502,11 @@ export class Login {
             }
 
             case 'OTP_CODE_ENTRY': {
-                this.bot.logger.info(this.bot.isMobile, 'LOGIN', 'OTP code entry page detected, attempting to find password option')
+                this.bot.logger.info(
+                    this.bot.isMobile,
+                    'LOGIN',
+                    'OTP code entry page detected, attempting to find password option'
+                )
 
                 // My Fix: Click "Use your password" footer
                 const footerLink = await page

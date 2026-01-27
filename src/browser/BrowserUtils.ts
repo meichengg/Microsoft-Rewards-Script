@@ -220,7 +220,7 @@ export default class BrowserUtils {
             )
 
             // Wait for selector to exist before clicking
-            await page.waitForSelector(selector, { state: 'visible', timeout: 10000 })
+            await page.waitForSelector(selector, { timeout: 1000 }).catch(() => { })
 
             const cursor = createCursor(page as any)
             await cursor.click(selector, options)
@@ -254,7 +254,7 @@ export default class BrowserUtils {
                 this.bot.logger.error(this.bot.isMobile, 'GHOST-CLICK', `Failed to collect debug info: ${debugError}`)
             }
 
-            this.bot.logger.error(
+            this.bot.logger.warn(
                 this.bot.isMobile,
                 'GHOST-CLICK',
                 `Original Error: ${error instanceof Error ? error.message : String(error)}`
